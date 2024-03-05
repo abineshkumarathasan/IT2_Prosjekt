@@ -1,6 +1,5 @@
-# Importerer nødvendige biblioteker
 import pygame as pg
-from pygame.locals import (K_LEFT, K_RIGHT, K_SPACE)
+from pygame.locals import (K_UP, K_DOWN, K_LEFT, K_RIGHT, K_SPACE)
 import math as m
 import random
 import time
@@ -62,6 +61,19 @@ class Hinder(Ball):
         self.farge = (0, 255, 46) # Gjør hinderet grønn
         if self.hp < 0:
             self.hp = 0
+    
+    def avstand(self, annenBall):
+        xAvstand2 = (self.x - annenBall.x) ** 2  # x-avstand i andre
+        yAvstand2 = (self.y - annenBall.y) ** 2  # y-avstand i andre
+
+        sentrumsavstand = m.sqrt(xAvstand2 + yAvstand2)
+
+        radiuser = self.radius + annenBall.radius
+
+        avstand = sentrumsavstand - radiuser
+
+        return avstand
+
 
 class Spiller(Ball):
     def __init__(self, x, y, radius, farge, vindusobjekt, fart):
@@ -72,17 +84,29 @@ class Spiller(Ball):
         self.pellet_counter = 0
         self.pellet_skrift = (255,255,255)
 
+    # Bevegelse 
     def flytt(self, taster):
         if taster[K_LEFT]:
             self.x -= self.fart
         if taster[K_RIGHT]:
             self.x += self.fart
+        if taster[K_UP]: # Tregere enn å gå side til side
+            self.y -= self.fart / 1.2
+        if taster[K_DOWN]:
+            self.y += self.fart / 1.2
+
 
         if taster[K_SPACE] and not self.shoot_pressed:  # Hvis space er trukket inn og shoot_pressed ikke er True
             self.shoot_pressed = True
             self.shoot() # Funksjon osm lager en pellet variabel og legger det til i en pellet liste
         elif not taster[K_SPACE]: # Hvis brukeren ikke trykker inn, så gir den brukeren muligheten til å skyte
             self.shoot_pressed = False
+
+
+    def slutt(self):
+        self.fart = 0 # Stopper hinder fra å bevege seg side til side
+        self.farge = (255, 100, 30) # Gjør hinderet oransj og viser visuelt at spiller har tapt
+
 
     def shoot(self):
         tall = random.randint(0,100)
@@ -142,10 +166,10 @@ def title_screen():
         # Sjernen plassert i listen stjerner
         stjerner.append(Stjerne(random.randint(0, VINDU_BREDDE), random.randint(0, VINDU_HOYDE), random.randint(5, 10), (100, 100, 0), vindu, 0))
 
-    # Lag titteltekst
-    tittel_font = pg.font.Font(None, 1)  # Start med minimal fontstørrelse
-    tittel_tekst = tittel_font.render("Space Invaders", True, (255, 255, 255))  # Hva som skal stå
-    tittel_tekst_posisjon = tittel_tekst.get_rect(center=(VINDU_BREDDE // 2, VINDU_HOYDE // 2 - 50))  # Dette vil bestemme hvor på skjermen teksten kommer til å være
+    ## Lag titteltekst
+    #tittel_font = pg.font.Font(None, 1)  # Start med minimal fontstørrelse
+    #tittel_tekst = tittel_font.render("Space Invaders", True, (255, 255, 255))  # Hva som skal stå
+    #tittel_tekst_posisjon = tittel_tekst.get_rect(center=(VINDU_BREDDE // 2, VINDU_HOYDE // 2 - 50))  # Dette vil bestemme hvor på skjermen teksten kommer til å være
 
     # Gradvis øk fontstørrelsen til original størrelse
     start_font = 1
@@ -175,6 +199,9 @@ def title_screen():
     play_tekst = play_font.render("Play", True, (255, 255, 255))
     play_tekst_posisjon = play_tekst.get_rect(center=(VINDU_BREDDE // 2, VINDU_HOYDE // 2 + 50))
 
+    color_timer = 0 # Variabel som blir brukt for knappen sin farge
+    lys_farge = True # Brukes også som variabel for knappen sin farge
+    boks_farge = (0, 123, 0) # Knappen sin farge
     while True:
         for event in pg.event.get():
             if event.type == pg.QUIT:
@@ -185,12 +212,22 @@ def title_screen():
                 mouse_x, mouse_y = pg.mouse.get_pos()
                 if play_tekst_posisjon.collidepoint(mouse_x, mouse_y):
                     return
+            
+        # Denne if-statmenten gjør slik at hvert sekund fargen på knappen endres
+        if time.time() - color_timer > 1:
+            if lys_farge == True: # lys_farge starter som True, og gjør derfor knappen mørk
+                boks_farge = (0,79,0)
+                lys_farge = False # Endrer til False slik at knappen blir lys neste gang
+            else:
+                boks_farge = (0, 153, 0)
+                lys_farge = True
+            color_timer = time.time()
 
         # Tegner tittelteksten
         vindu.blit(tittel_tekst, tittel_tekst_posisjon)
 
         # Tegner knappen
-        pg.draw.rect(vindu, (0, 123, 0), (VINDU_BREDDE // 2 - 50, VINDU_HOYDE // 2 + 30, 100, 40))
+        pg.draw.rect(vindu, boks_farge, (VINDU_BREDDE // 2 - 50, VINDU_HOYDE // 2 + 30, 100, 40))
         vindu.blit(play_tekst, play_tekst_posisjon)
         pg.display.flip()
 
@@ -204,6 +241,7 @@ spiller = Spiller(250, 600, 20, (200, 0, 100), vindu, 0.146)
 # Gjenta helt til brukeren lukker vinduet
 fortsett = True
 dood = False
+avstand_mellom_spiller_og_hinder_bool = False
 
 # Hovedløkken for spillet
 while fortsett:
@@ -240,6 +278,10 @@ while fortsett:
     if hinder.hp <= 0 and dood == False: # Når hinderet har 0 hp, vil den dø
         hinder.slutt()
         dood = True
+    
+    if hinder.avstand(spiller) < 15 and avstand_mellom_spiller_og_hinder_bool == False: # Når spiller og hinder kolliderer kjører koden under
+        spiller.slutt()
+        avstand_mellom_spiller_og_hinder_bool = True
 
     hindring_hp = font.render(f"HP: {str(hinder.hp)}", True, (15, 15, 15))
     antall_pellets = font.render(f"{str((spiller.pellet_max - spiller.pellet_counter))}", True, spiller.pellet_skrift) #spiller.pellet_skrift vil endre farge når spiller er tom for skudd
