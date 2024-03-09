@@ -33,7 +33,7 @@ class Hinder(Ball):
         super().__init__(x, y, radius, farge, vindusobjekt, fart)
         self.hp = 100
         self.move_counter = 0
-        self.move_threshold = 400  # Ved å gjøre dette tallet større øker man mellomrommet for Hinder til å velge ny retning
+        self.move_threshold = 400 # Ved å gjøre dette tallet større øker man mellomrommet for Hinder til å velge ny retning
         self.sakteFart = 0.01
 
     def flytt(self):
@@ -61,10 +61,10 @@ class Hinder(Ball):
         self.farge = (0, 255, 46) # Gjør hinderet grønn
         if self.hp < 0:
             self.hp = 0
-    
+
     def avstand(self, annenBall):
-        xAvstand2 = (self.x - annenBall.x) ** 2  # x-avstand i andre
-        yAvstand2 = (self.y - annenBall.y) ** 2  # y-avstand i andre
+        xAvstand2 = (self.x - annenBall.x) ** 2 # x-avstand i andre
+        yAvstand2 = (self.y - annenBall.y) ** 2 # y-avstand i andre
 
         sentrumsavstand = m.sqrt(xAvstand2 + yAvstand2)
 
@@ -78,25 +78,24 @@ class Hinder(Ball):
 class Spiller(Ball):
     def __init__(self, x, y, radius, farge, vindusobjekt, fart):
         super().__init__(x, y, radius, farge, vindusobjekt, fart)
-        self.pellets = []  # Det kommer til å være mange pellets i spillet på en gang, så ved å putte det i en liste, så kan jeg fjerne og legge til lettere
-        self.shoot_pressed = False  # Denne variabelen blir brukt slik at brukeren ikke kan holde inne knappen
+        self.pellets = [] # Det kommer til å være mange pellets i spillet på en gang, så ved å putte det i en liste, så kan jeg fjerne og legge til lettere
+        self.shoot_pressed = False # Denne variabelen blir brukt slik at brukeren ikke kan holde inne knappen
         self.pellet_max = 40
         self.pellet_counter = 0
-        self.pellet_skrift = (255,255,255)
+        self.pellet_skrift = (255, 255, 255)
 
-    # Bevegelse 
+    # Bevegelse
     def flytt(self, taster):
         if taster[K_LEFT]:
             self.x -= self.fart
         if taster[K_RIGHT]:
             self.x += self.fart
         if taster[K_UP]: # Tregere enn å gå side til side
-            self.y -= self.fart / 1.2
+            self.y -= self.fart / 1.3
         if taster[K_DOWN]:
-            self.y += self.fart / 1.2
+            self.y += self.fart / 1.3
 
-
-        if taster[K_SPACE] and not self.shoot_pressed:  # Hvis space er trukket inn og shoot_pressed ikke er True
+        if taster[K_SPACE] and not self.shoot_pressed: # Hvis space er trukket inn og shoot_pressed ikke er True
             self.shoot_pressed = True
             self.shoot() # Funksjon osm lager en pellet variabel og legger det til i en pellet liste
         elif not taster[K_SPACE]: # Hvis brukeren ikke trykker inn, så gir den brukeren muligheten til å skyte
@@ -122,11 +121,12 @@ class Spiller(Ball):
                 self.pellets.append(pellet)
                 self.pellet_counter += 1
 
-    def update_pellets(self): # Denne funksjonen går igjennom alle pelletsa som er på skjermen og oppdaterer dem alle sammen. Metoden blir kjørt i hoved loop.
+    def update_pellets(
+            self): # Denne funksjonen går igjennom alle pelletsa som er på skjermen og oppdaterer dem alle sammen. Metoden blir kjørt i hoved loop.
         for pellet in self.pellets: # Går igjennom alle pelletsa som er i skjermen nå, beveger, tegner og skjekker om er utenfor y = 0
             pellet.move()
             pellet.draw()
-            if pellet.y <= 0:  # skjekker om pelleten treffer toppen av skjermen
+            if pellet.y <= 0: # skjekker om pelleten treffer toppen av skjermen
                 self.pellets.remove(pellet)
                 print("Pellet borte")
 
@@ -136,15 +136,15 @@ class Pellet(Ball):
         self.dobbel = dobbel
 
     def move(self):
-        self.y -= self.fart  # Pelleten skal bare oppover
+        self.y -= self.fart # Pelleten skal bare oppover
 
     def draw(self):
         pg.draw.circle(self.vinduobjekt, self.farge, (self.x, self.y), self.radius)
 
     def avstand(self, annenBall):
         """Metode for å finne avstanden til en annen ball"""
-        xAvstand2 = (self.x - annenBall.x) ** 2  # x-avstand i andre
-        yAvstand2 = (self.y - annenBall.y) ** 2  # y-avstand i andre
+        xAvstand2 = (self.x - annenBall.x) ** 2 # x-avstand i andre
+        yAvstand2 = (self.y - annenBall.y) ** 2 # y-avstand i andre
 
         sentrumsavstand = m.sqrt(xAvstand2 + yAvstand2)
 
@@ -166,14 +166,9 @@ def title_screen():
         # Sjernen plassert i listen stjerner
         stjerner.append(Stjerne(random.randint(0, VINDU_BREDDE), random.randint(0, VINDU_HOYDE), random.randint(5, 10), (100, 100, 0), vindu, 0))
 
-    ## Lag titteltekst
-    #tittel_font = pg.font.Font(None, 1)  # Start med minimal fontstørrelse
-    #tittel_tekst = tittel_font.render("Space Invaders", True, (255, 255, 255))  # Hva som skal stå
-    #tittel_tekst_posisjon = tittel_tekst.get_rect(center=(VINDU_BREDDE // 2, VINDU_HOYDE // 2 - 50))  # Dette vil bestemme hvor på skjermen teksten kommer til å være
-
     # Gradvis øk fontstørrelsen til original størrelse
     start_font = 1
-    while start_font < 64:  # Endre 64 til ønsket størrelse på tittelteksten
+    while start_font < 64: # Endre 64 til ønsket størrelse på tittelteksten
         start_font += 1
         tittel_font = pg.font.Font(None, start_font)
         tittel_tekst = tittel_font.render("Space Invaders", True, (255, 255, 255))
@@ -184,9 +179,9 @@ def title_screen():
                 pg.quit()
                 quit()
         # Tegner bakgrunnen
-        vindu.fill((0, 0, 0))  # Bakgrunn for title-screen vil være verdien inni
-        for stjerne in stjerner:  # Her så skjekker man alle cellene i spillet
-            stjerne.tegn()  # tegner alle cellene
+        vindu.fill((0, 0, 0)) # Bakgrunn for title-screen vil være verdien inni
+        for stjerne in stjerner: # Her så skjekker man alle cellene i spillet
+            stjerne.tegn() # tegner alle cellene
 
         # Tegner tittelteksten
         vindu.blit(tittel_tekst, tittel_tekst_posisjon)
@@ -231,9 +226,51 @@ def title_screen():
         vindu.blit(play_tekst, play_tekst_posisjon)
         pg.display.flip()
 
+# Funksjon som er game over skjermen
+def game_over_screen():
+    game_over_font = pg.font.SysFont(None, 64)
+    restart_button = pg.Rect(VINDU_BREDDE / 2 - 100, VINDU_HOYDE / 2, 200, 50) # Dette er posisjonen og størrelse på knappene
+    quit_button = pg.Rect(VINDU_BREDDE / 2 - 100, VINDU_HOYDE / 2 + 100, 200, 50)
+
+    while True:
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                pg.quit()
+                quit()
+            elif event.type == pg.MOUSEBUTTONDOWN:
+                mouse_pos = event.pos
+                if restart_button.collidepoint(mouse_pos):
+                    return "restart"
+                elif quit_button.collidepoint(mouse_pos):
+                    pg.quit()
+                    quit()
+
+        # Bakgrunn
+        vindu.fill((30, 30, 30))
+
+        # Tegner "GAME OVER"
+        game_over_text = game_over_font.render("GAME OVER", True, (255, 0, 0))
+        game_over_text_rect = game_over_text.get_rect(center=(VINDU_BREDDE / 2, 200))
+        vindu.blit(game_over_text, game_over_text_rect)
+
+        # Tegner restart knappen
+        pg.draw.rect(vindu, (0, 150, 0), restart_button)
+        restart_text = game_over_font.render("Restart", True, (255, 255, 255))
+        restart_text_rect = restart_text.get_rect(center=restart_button.center)
+        vindu.blit(restart_text, restart_text_rect)
+
+        # Tegner quit knappen
+        pg.draw.rect(vindu, (150, 0, 0), quit_button)
+        quit_text = game_over_font.render("Quit", True, (255, 255, 255))
+        quit_text_rect = quit_text.get_rect(center=quit_button.center)
+        vindu.blit(quit_text, quit_text_rect)
+
+        pg.display.flip()
+
+
+
 # Start tittel skjerm
 title_screen()
-
 
 hinder = Hinder(100, 100, 50, (255, 40, 50), vindu, 0.23)
 spiller = Spiller(250, 600, 20, (200, 0, 100), vindu, 0.146)
@@ -243,13 +280,14 @@ fortsett = True
 dood = False
 avstand_mellom_spiller_og_hinder_bool = False
 
-# Hovedløkken for spillet
-while fortsett:
+# Dette er hovedløkken til spillet
+game_over = False
+while not game_over:
 
-    # Sjekker om brukeren har lukket vinduet
+    # Skjekker om brukeren har lukket vinduet
     for event in pg.event.get():
         if event.type == pg.QUIT:
-            fortsett = False
+            game_over = True
 
     # Henter en ordbok med status for alle tastatur-taster
     trykkede_taster = pg.key.get_pressed()
@@ -278,16 +316,27 @@ while fortsett:
     if hinder.hp <= 0 and dood == False: # Når hinderet har 0 hp, vil den dø
         hinder.slutt()
         dood = True
-    
+
     if hinder.avstand(spiller) < 15 and avstand_mellom_spiller_og_hinder_bool == False: # Når spiller og hinder kolliderer kjører koden under
         spiller.slutt()
         avstand_mellom_spiller_og_hinder_bool = True
 
     hindring_hp = font.render(f"HP: {str(hinder.hp)}", True, (15, 15, 15))
-    antall_pellets = font.render(f"{str((spiller.pellet_max - spiller.pellet_counter))}", True, spiller.pellet_skrift) #spiller.pellet_skrift vil endre farge når spiller er tom for skudd
+    antall_pellets = font.render(f"{str((spiller.pellet_max - spiller.pellet_counter))}", True, spiller.pellet_skrift) # spiller.pellet_skrift vil endre farge når spiller er tom for skudd
 
-    vindu.blit(hindring_hp, (0,0))
-    vindu.blit(antall_pellets, (spiller.x-11, spiller.y-12))
+    vindu.blit(hindring_hp, (0, 0))
+    vindu.blit(antall_pellets, (spiller.x - 11, spiller.y - 12))
+
+    if avstand_mellom_spiller_og_hinder_bool: # Hvis denne variabelen er True, så betyr det at hinder og spiller kolliderte
+        valg = game_over_screen() # Game over skjermen kommer og spilleren får valget om å restarte eller avslutte
+        if valg == "restart":
+            # Her må alle verdier bli restarta
+            hinder = Hinder(100, 100, 50, (255, 40, 50), vindu, 0.23)
+            spiller = Spiller(250, 600, 20, (200, 0, 100), vindu, 0.146)
+            dood = False
+            avstand_mellom_spiller_og_hinder_bool = False
+        elif valg == "quit":
+            game_over = True # Går ut av hovedløkken
 
     # Oppdaterer alt innholdet i vinduet
     pg.display.flip()
