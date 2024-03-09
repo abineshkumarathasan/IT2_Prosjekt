@@ -24,6 +24,7 @@ class Ball:
         self.farge = farge
         self.vinduobjekt = vinduobjekt
         self.fart = fart
+        self.dood = False
 
     def tegn(self):
         pg.draw.circle(self.vinduobjekt, self.farge, (self.x, self.y), self.radius)
@@ -31,7 +32,7 @@ class Ball:
 class Hinder(Ball):
     def __init__(self, x, y, radius, farge, vindusobjekt, fart):
         super().__init__(x, y, radius, farge, vindusobjekt, fart)
-        self.hp = 100
+        self.hp = 5
         self.move_counter = 0
         self.move_threshold = 400 # Ved å gjøre dette tallet større øker man mellomrommet for Hinder til å velge ny retning
         self.sakteFart = 0.01
@@ -80,7 +81,7 @@ class Spiller(Ball):
         super().__init__(x, y, radius, farge, vindusobjekt, fart)
         self.pellets = [] # Det kommer til å være mange pellets i spillet på en gang, så ved å putte det i en liste, så kan jeg fjerne og legge til lettere
         self.shoot_pressed = False # Denne variabelen blir brukt slik at brukeren ikke kan holde inne knappen
-        self.pellet_max = 40
+        self.pellet_max = 100
         self.pellet_counter = 0
         self.pellet_skrift = (255, 255, 255)
 
@@ -100,12 +101,6 @@ class Spiller(Ball):
             self.shoot() # Funksjon osm lager en pellet variabel og legger det til i en pellet liste
         elif not taster[K_SPACE]: # Hvis brukeren ikke trykker inn, så gir den brukeren muligheten til å skyte
             self.shoot_pressed = False
-
-
-    def slutt(self):
-        self.fart = 0 # Stopper hinder fra å bevege seg side til side
-        self.farge = (255, 100, 30) # Gjør hinderet oransj og viser visuelt at spiller har tapt
-
 
     def shoot(self):
         tall = random.randint(0,100)
@@ -272,13 +267,36 @@ def game_over_screen():
 # Start tittel skjerm
 title_screen()
 
-hinder = Hinder(100, 100, 50, (255, 40, 50), vindu, 0.23)
+hinder_mengde = 10 # Denne variabelen blir brukt senere slik at når en ny level starter
+
+hinder_liste = []
+for i in range(0, hinder_mengde): # 10 hinder på starten
+    x = random.randint(50, VINDU_BREDDE - 50)
+    y = random.randint(50, 150)
+    farge = (255, 0, 0)
+    hinder = Hinder(x, y, 20, farge, vindu, 0.23)
+    hinder_liste.append(hinder)
+
+
+def generer_ny_bolge(bølge_level):
+
+    hinder_liste = []
+    for i in range(0, hinder_mengde * bølge_level): # 10 hinder på starten
+        x = random.randint(50, VINDU_BREDDE - 50)
+        y = random.randint(50, 150)
+        farge = (255, 0, 0)
+        hinder = Hinder(x, y, 20, farge, vindu, 0.23)
+        hinder_liste.append(hinder)
+    
+    return hinder_liste # Returnerer den nye bølgen med fiender
+
+
 spiller = Spiller(250, 600, 20, (200, 0, 100), vindu, 0.146)
 
-# Gjenta helt til brukeren lukker vinduet
-fortsett = True
-dood = False
 avstand_mellom_spiller_og_hinder_bool = False
+alle_dood2 = False
+
+level = 1 # Når spilleren vinner en bølge med fiender, så skal denne økes med 1
 
 # Dette er hovedløkken til spillet
 game_over = False
@@ -295,46 +313,67 @@ while not game_over:
     # Farger bakgrunnen lyseblå
     vindu.fill((135, 206, 235))
 
+    # Tekst som skal vise hvilket level brukeren er på
+    level_text = font.render(f"Level: {level}", True, (0, 0, 0))
+    vindu.blit(level_text, (10, 10))  
+
     spiller.tegn()
     spiller.flytt(trykkede_taster)
     spiller.update_pellets() # Skjekker og oppdaterer pelletsa på skjermen (Siden pelletsa blir dannet innenfor spiller klassen, så skal den ikke blir definert som spiller og hindring.)
 
-    for pellet in spiller.pellets: # Går igjennom alle pellets i spillet akkurat nå
-        if pellet.avstand(hinder) < 20 and hinder.hp != 0: # hvis de pelleten som blir skjekket nå har en avstand på mindre enn 20 (og hvis hindring ikke allerede er dø):
-            if pellet.dobbel == False: # Egen variabel som hvis er sann gir dobbel skade til Hinder (hvis du treffer)
-                spiller.pellets.remove(pellet)
-                hinder.hp -= 5
-                print(hinder.hp)
-            else:
-                spiller.pellets.remove(pellet)
-                hinder.hp -= 10
-                print(hinder.hp)
+    for hinder in hinder_liste:
+        for pellet in spiller.pellets: # Går igjennom alle pellets i spillet akkurat nå
+            if pellet.avstand(hinder) < 20 and hinder.hp != 0: # hvis de pelleten som blir skjekket nå har en avstand på mindre enn 20 (og hvis hindring ikke allerede er dø):
+                if pellet.dobbel == False: # Egen variabel som hvis er sann gir dobbel skade til Hinder (hvis du treffer)
+                    spiller.pellets.remove(pellet)
+                    hinder.hp -= 5
+                    print(hinder.hp)
+                else:
+                    spiller.pellets.remove(pellet)
+                    hinder.hp -= 10
+                    print(hinder.hp)
 
-    hinder.tegn()
-    hinder.flytt()
+    for hinder in hinder_liste:
+        hinder.tegn()
+        hinder.flytt()
 
-    if hinder.hp <= 0 and dood == False: # Når hinderet har 0 hp, vil den dø
-        hinder.slutt()
-        dood = True
+        if hinder.hp <= 0 and hinder.dood == False: # Når hinderet har 0 hp, vil den dø
+            hinder.slutt()
+            hinder.dood = True
 
-    if hinder.avstand(spiller) < 15 and avstand_mellom_spiller_og_hinder_bool == False: # Når spiller og hinder kolliderer kjører koden under
-        spiller.slutt()
-        avstand_mellom_spiller_og_hinder_bool = True
+        if hinder.avstand(spiller) < 15 and avstand_mellom_spiller_og_hinder_bool == False: # Når spiller og hinder kolliderer kjører koden under
+            avstand_mellom_spiller_og_hinder_bool = True
+    
+    
+    alle_dood = all(hinder.dood for hinder in hinder_liste)
+    if alle_dood == True:
+        hinder_liste = [] # Fjerner alle de dø 
+        print("ALLE ER DØ")
+        level = level + 1 # Øker level med 1, siden spilleren drepte alle hinderene 
+        hinder_liste = generer_ny_bolge(level) # Den nye hinder_listen med den nye bølgen
 
-    hindring_hp = font.render(f"HP: {str(hinder.hp)}", True, (15, 15, 15))
     antall_pellets = font.render(f"{str((spiller.pellet_max - spiller.pellet_counter))}", True, spiller.pellet_skrift) # spiller.pellet_skrift vil endre farge når spiller er tom for skudd
 
-    vindu.blit(hindring_hp, (0, 0))
     vindu.blit(antall_pellets, (spiller.x - 11, spiller.y - 12))
 
     if avstand_mellom_spiller_og_hinder_bool: # Hvis denne variabelen er True, så betyr det at hinder og spiller kolliderte
         valg = game_over_screen() # Game over skjermen kommer og spilleren får valget om å restarte eller avslutte
         if valg == "restart":
             # Her må alle verdier bli restarta
-            hinder = Hinder(100, 100, 50, (255, 40, 50), vindu, 0.23)
-            spiller = Spiller(250, 600, 20, (200, 0, 100), vindu, 0.146)
-            dood = False
-            avstand_mellom_spiller_og_hinder_bool = False
+            hinder_liste = [] # Nye hindere
+
+            for i in range(0, 10): # 10 hinder
+                x = random.randint(50, VINDU_BREDDE - 50)
+                y = random.randint(50, 150)
+                farge = (255, 0, 0)
+                hinder = Hinder(x, y, 20, farge, vindu, 0.23)
+                hinder_liste.append(hinder)
+
+            spiller = Spiller(250, 600, 20, (200, 0, 100), vindu, 0.146) # Spiller starter på nytt
+
+            avstand_mellom_spiller_og_hinder_bool = False # Kollisjon variabel resetta
+
+            level = 1 # Går tilbake til level 1
         elif valg == "quit":
             game_over = True # Går ut av hovedløkken
 
