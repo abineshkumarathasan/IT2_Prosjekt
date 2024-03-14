@@ -7,6 +7,8 @@ import time
 # Initialiserer/starter pygame
 pg.init()
 
+clock = pg.time.Clock()
+
 # Oppretter et vindu der vi skal "tegne" innholdet vårt
 VINDU_BREDDE = 500
 VINDU_HOYDE = 700
@@ -30,7 +32,7 @@ class Ball:
         pg.draw.circle(self.vinduobjekt, self.farge, (self.x, self.y), self.radius)
 
 class Hinder(Ball):
-    def __init__(self, x, y, radius, farge, vindusobjekt, fart):
+    def __init__(self, x, y, radius, farge, vindusobjekt, fart, sprite):
         super().__init__(x, y, radius, farge, vindusobjekt, fart)
         self.hp = 10
         self.move_counter = 0
@@ -40,6 +42,8 @@ class Hinder(Ball):
             self.ekstraSkudd = True # Ekstra skudd blir gitt til spilleren
         else:
             self.ekstraSkudd = False # Spilleren får ikke ekstra skudd
+        
+        self.sprite = sprite
 
     def flytt(self):
         # Sjekker om hinderet er utenfor høyre/venstre kant
@@ -60,9 +64,6 @@ class Hinder(Ball):
             else:
                 self.fart = -abs(self.fart)
 
-    #def tegn(self): # For å tegne bilde isteden for ball
-    #    self.vinduobjekt.blit(hinder_sprite, (self.x - self.radius, self.y - self.radius))
-
     def slutt(self):
         self.fart = 0 # Stopper hinder fra å bevege seg side til side
         self.sakteFart = 0 # Stopper hinder fra å bevege seg ned mot spilleren
@@ -81,6 +82,10 @@ class Hinder(Ball):
         avstand = sentrumsavstand - radiuser
 
         return avstand
+
+    def tegn(self): # For å tegne bilde isteden for ball
+        self.vinduobjekt.blit(self.sprite, (self.x - self.radius, self.y - self.radius))
+
 
 class Boss(Ball): # Egen klasse for BOSS i spillet
     def __init__(self, x, y, radius, farge, vindusobjekt, fart):
@@ -153,7 +158,7 @@ class Spiller(Ball):
     # Bevegelse
     def flytt(self, taster):
         if taster[K_LEFT]:
-            if self.x <= 0:
+            if self.x <= 0: # Skjekker om spiller er på venstre side av skjermen, hvis sant: ikke gå videre den veien
                 self.x = self.x
             else:
                 self.x -= self.fart
@@ -201,6 +206,10 @@ class Spiller(Ball):
             if pellet.y <= 0: # skjekker om pelleten treffer toppen av skjermen
                 self.pellets.remove(pellet)
                 print("Pellet borte")
+    
+    def tegn(self): # For å tegne bilde isteden for ball
+        self.vinduobjekt.blit(spiller_sprite, (self.x-self.radius-10, self.y - self.radius)) #trengte -10 for at det skulle være mer eksakt
+
 
 class Pellet(Ball):
     def __init__(self, x, y, radius, farge, vinduobjekt, fart, dobbel):
@@ -364,6 +373,15 @@ def game_over_screen():
 # Start tittel skjerm
 title_screen()
 
+# Laster ned alle sprites
+spiller_sprite_original = pg.image.load("Assets/SpillerSkip.png")
+spiller_sprite = pg.transform.scale(spiller_sprite_original, (60,60))
+hinder_sprite_original = pg.image.load("Assets/HinderSkip.png")
+hinder_sprite = pg.transform.scale(hinder_sprite_original, (60,60))
+hinderDMG_sprite_original = pg.image.load("Assets/HinderSkipDMG.png")
+hinderDMG_sprite = pg.transform.scale(hinderDMG_sprite_original, (60,60)) 
+
+
 hinder_mengde = 3 # Denne variabelen blir brukt senere slik at når en ny level starter
 
 hinder_liste = [] # Liste for å samle alle hindere
@@ -371,7 +389,7 @@ for i in range(0, hinder_mengde): # hinder mengde på starten av spillet (først
     x = random.randint(50, VINDU_BREDDE - 50)
     y = random.randint(50, 150)
     farge = (255, 0, 0)
-    hinder = Hinder(x, y, 20, farge, vindu, 0.23)
+    hinder = Hinder(x, y, 20, farge, vindu, 0.23, hinder_sprite)
     hinder_liste.append(hinder)
 
 
@@ -382,7 +400,7 @@ def generer_ny_bolge(bølge_level):
         x = random.randint(50, VINDU_BREDDE - 50)
         y = random.randint(50, 150)
         farge = (255, 0, 0)
-        hinder = Hinder(x, y, 20, farge, vindu, 0.23)
+        hinder = Hinder(x, y, 20, farge, vindu, 0.23, hinder_sprite)
         hinder_liste.append(hinder)
     
     return hinder_liste # Returnerer den nye bølgen med fiender
@@ -392,9 +410,6 @@ spiller = Spiller(250, 600, 20, (200, 0, 100), vindu, 0.146) # Variabel for spil
 
 avstand_mellom_spiller_og_hinder_bool = False
 alle_dood2 = False
-
-#hinder_sprite_original = pg.image.load("Assets/doggo.jpg")
-#hinder_sprite = pg.transform.scale(hinder_sprite_original, (30,30))
 
 
 level = 1  # Når spilleren vinner en bølge med fiender, så skal denne økes med 1
@@ -406,6 +421,8 @@ ekstra_pellet_ball = []
 
 # Dette er hovedløkken til spillet
 while not game_over:
+
+    clock.tick(2500)
 
     # Skjekker om brukeren har lukket vinduet
     for event in pg.event.get():
@@ -432,7 +449,8 @@ while not game_over:
                 if pellet.dobbel == False: # Egen variabel som hvis er sann gir dobbel skade til Hinder (hvis du treffer)
                     spiller.pellets.remove(pellet)
                     hinder.hp -= 5
-                    hinder.farge = (255, 150, 0) # Endrer fargen til hinder til oransje for å indikere den har blitt skutt
+                    hinder.sprite = hinderDMG_sprite # Skal endre bilde til hinder
+                    print(hinder.sprite)
                     print(hinder.hp)
                 else:
                     spiller.pellets.remove(pellet)
@@ -533,7 +551,7 @@ while not game_over:
                 x = random.randint(50, VINDU_BREDDE - 50)
                 y = random.randint(50, 150)
                 farge = (255, 0, 0)
-                hinder = Hinder(x, y, 20, farge, vindu, 0.23)
+                hinder = Hinder(x, y, 20, farge, vindu, 0.23, hinder_sprite)
                 hinder_liste.append(hinder)
 
             spiller = Spiller(250, 600, 20, (200, 0, 100), vindu, 0.146) # Spiller starter på nytt
