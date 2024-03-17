@@ -36,8 +36,8 @@ class Hinder(Ball):
         super().__init__(x, y, radius, farge, vindusobjekt, fart)
         self.hp = 10
         self.move_counter = 0
-        self.move_threshold = 400 # Ved å gjøre dette tallet større øker man mellomrommet for Hinder til å velge ny retning
-        self.sakteFart = 0.01
+        self.move_threshold = 20 # Ved å gjøre dette tallet større øker man mellomrommet for Hinder til å velge ny retning
+        self.sakteFart = 0.23
         if random.randint(0,100) <= 20: # Hvis det tilfeldige tallet er mindre enn tallet så... (20% sjanse)
             self.ekstraSkudd = True # Ekstra skudd blir gitt til spilleren
         else:
@@ -63,13 +63,7 @@ class Hinder(Ball):
                 self.fart = abs(self.fart)
             else:
                 self.fart = -abs(self.fart)
-
-    def slutt(self):
-        self.fart = 0 # Stopper hinder fra å bevege seg side til side
-        self.sakteFart = 0 # Stopper hinder fra å bevege seg ned mot spilleren
-        self.farge = (0, 255, 46) # Gjør hinderet grønn
-        if self.hp < 0:
-            self.hp = 0
+  
 
     def avstand(self, annenBall):
         xAvstand2 = (self.x - annenBall.x) ** 2 # x-avstand i andre
@@ -93,7 +87,7 @@ class Boss(Ball): # Egen klasse for BOSS i spillet
         self.hp = 200 * ((level/10)/2) # Mer hp enn de vanlige hinderene (øker for hvert level)
         self.move_counter = 0
         self.move_threshold = 400 # Ved å gjøre dette tallet større øker man mellomrommet for Hinder til å velge ny retning
-        self.sakteFart = 0.01
+        self.sakteFart = 0.23
         if random.randint(0,100) <= 50: # Hvis det tilfeldige tallet er mindre enn tallet så... (50% sjanse)
             self.ekstraSkudd = True # Ekstra skudd blir gitt til spilleren
         else:
@@ -137,10 +131,10 @@ class Boss(Ball): # Egen klasse for BOSS i spillet
         return avstand
     
     def tegn(self):
-        pg.draw.circle(self.vinduobjekt, self.farge, (self.x, self.y), self.radius)
-        boss_hp = font.render(f"{str(self.hp)}", True, (0,0,0))
+        self.vinduobjekt.blit(boss_sprite, (self.x-self.radius-10, self.y - self.radius)) #trengte -10 for at det skulle være mer eksakt
+        boss_hp = font.render(f"{str(self.hp)}", True, (255,255,255))
 
-        vindu.blit(boss_hp, (hinder.x - 15, hinder.y - 12))
+        vindu.blit(boss_hp, (hinder.x - 15, hinder.y + 50))
 
 
 
@@ -188,14 +182,15 @@ class Spiller(Ball):
     def shoot(self):
         tall = random.randint(0,100)
         if (self.pellet_max - self.pellet_counter) == 0:
-            self.pellet_skrift = (255,0,0)
+            self.pellet_skrift = (255,0,0) # Gjør teksten rød for å hvise at man er tom for skudd
         else:
+            self.pellet_skrift = (255,255,255) # beholder sin hvit farge
             if tall > 0 and tall < 10:
-                pellet = Pellet(self.x, self.y, 10, (255, 255, 0 ), vindu, 0.5, True)
+                pellet = Pellet(self.x, self.y, 10, (255, 255, 0 ), vindu, 6, True) # Gir dobbelDamage = True
                 self.pellets.append(pellet)
                 self.pellet_counter += 1
             else:
-                pellet = Pellet(self.x, self.y, 5, (255, 255, 255), vindu, 0.5, False)
+                pellet = Pellet(self.x, self.y, 5, (255, 255, 255), vindu, 6, False) # Gir at det ikke skal være dobbel damage
                 self.pellets.append(pellet)
                 self.pellet_counter += 1
 
@@ -240,7 +235,7 @@ class PowerUp(Ball): # En klasse for PowerUp ballen som kommer
         super().__init__(x, y, radius, farge, vinduobjekt, fart)
 
     def flytt(self):
-        self.y += self.fart
+        self.y += self.fart # Går nedover
 
     def avstand(self, annenBall):
         """Metode for å finne avstanden til en annen ball"""
@@ -258,6 +253,37 @@ class PowerUp(Ball): # En klasse for PowerUp ballen som kommer
 class Stjerne(Ball): # Skal kun bli brukt for bakgrunn
     def __init__(self, x, y, radius, farge, vindusobjekt, fart):
         super().__init__(x, y, radius, farge, vindusobjekt, fart)
+
+class Spreng(Ball): # Klasse som skal generere en ball som dukker opp når hinder blir drept
+    def __init__(self, x, y, radius, farge, vinduobjekt, fart):
+        super().__init__(x, y, radius, farge, vinduobjekt, fart)
+        self.xFart = random.randint(1, 2) # Tilfeldig fart på x-aksen og en tilfeldig fart på y-aksen
+        self.yFart = random.randint(1, 3)
+        self.xRetning = random.randint(-1,1) # Enten er retningen negativ eller positiv. Dette bestemmer da om eksplosjonen går opp eller ned, eller høyre eller venstre
+        self.yRetning = random.randint(-1,1)
+
+    
+    def flytt(self): # Funksjon for å flytte seg
+        if self.xRetning == 0: # Hvis retningen blir null (noe som er muldig siden jeg brukte random.randint mellom -1 og 1), så vil den automatisk bli 1
+            self.xRetning = 1
+        if self.yRetning == 0: # Samme for y-retningen
+            self.yRetning = 1
+        self.x += self.xFart * self.xRetning # Retning ganger farten er hvordan eksplosjonen skal bevege seg
+        self.y += self.yFart * self.yRetning
+        
+    def avstand(self, annenBall):
+        """Metode for å finne avstanden til en annen ball"""
+        xAvstand2 = (self.x - annenBall.x) ** 2 # x-avstand i andre
+        yAvstand2 = (self.y - annenBall.y) ** 2 # y-avstand i andre
+
+        sentrumsavstand = m.sqrt(xAvstand2 + yAvstand2)
+
+        radiuser = self.radius + annenBall.radius
+
+        avstand = sentrumsavstand - radiuser
+
+        return avstand
+
 
 
 def title_screen():
@@ -380,6 +406,8 @@ hinder_sprite_original = pg.image.load("Assets/HinderSkip.png")
 hinder_sprite = pg.transform.scale(hinder_sprite_original, (60,60))
 hinderDMG_sprite_original = pg.image.load("Assets/HinderSkipDMG.png")
 hinderDMG_sprite = pg.transform.scale(hinderDMG_sprite_original, (60,60)) 
+boss_sprite_original = pg.image.load("Assets/UbbiBoss.png")
+boss_sprite = pg.transform.scale(boss_sprite_original, (250,250))
 
 
 hinder_mengde = 3 # Denne variabelen blir brukt senere slik at når en ny level starter
@@ -389,7 +417,7 @@ for i in range(0, hinder_mengde): # hinder mengde på starten av spillet (først
     x = random.randint(50, VINDU_BREDDE - 50)
     y = random.randint(50, 150)
     farge = (255, 0, 0)
-    hinder = Hinder(x, y, 20, farge, vindu, 0.23, hinder_sprite)
+    hinder = Hinder(x, y, 20, farge, vindu, 4, hinder_sprite)
     hinder_liste.append(hinder)
 
 
@@ -400,13 +428,13 @@ def generer_ny_bolge(bølge_level):
         x = random.randint(50, VINDU_BREDDE - 50)
         y = random.randint(50, 150)
         farge = (255, 0, 0)
-        hinder = Hinder(x, y, 20, farge, vindu, 0.23, hinder_sprite)
+        hinder = Hinder(x, y, 20, farge, vindu, 4, hinder_sprite)
         hinder_liste.append(hinder)
     
     return hinder_liste # Returnerer den nye bølgen med fiender
 
 
-spiller = Spiller(250, 600, 20, (200, 0, 100), vindu, 0.146) # Variabel for spiller karakteren
+spiller = Spiller(250, 600, 20, (200, 0, 100), vindu, 4) # Variabel for spiller karakteren
 
 avstand_mellom_spiller_og_hinder_bool = False
 alle_dood2 = False
@@ -417,12 +445,13 @@ level = 1  # Når spilleren vinner en bølge med fiender, så skal denne økes m
 game_over = False
 tom_for_pellets = False
 
-ekstra_pellet_ball = []
+ekstra_pellet_ball = [] # Liste over PowerUp-baller som er på skjermen/spillet
+eksplosjoner = [] # Liste over eksplosjoner som er på skjermen/spillet
 
 # Dette er hovedløkken til spillet
 while not game_over:
 
-    clock.tick(2500)
+    clock.tick(60) # Dette er FPS spillet kjører på (Dette gjør slik at spillet ikke "lagger" og ikke varierer fra pc til pc)
 
     # Skjekker om brukeren har lukket vinduet
     for event in pg.event.get():
@@ -461,14 +490,18 @@ while not game_over:
         hinder.tegn() # tegner hinderet
         hinder.flytt() # Flytter hinderet
 
-        if hinder.hp <= 0 and hinder.dood == False: # Når hinderet har 0 hp, vil den dø
-            hinder.slutt()
+        if hinder.hp <= 0: # Når hinderet har 0 hp, vil den dø
+            for i in range(0, random.randint(1,3)):
+                spreng = Spreng(hinder.x, hinder.y, random.randint(9,20), (255, 100, 0), vindu, 3)
+                eksplosjoner.append(spreng)
+
             if hinder.ekstraSkudd == True: # Inne i alle hindere så er den en variabel som sier om den har ekstra skudd eller ikke
                 print("EKSTRA SKUDD")
-                PowerUp_ball = PowerUp(hinder.x, hinder.y, 15, (100,100,255), vindu, 0.10) # Lager en PowerUp-ball for skuddene
+                PowerUp_ball = PowerUp(hinder.x, hinder.y, 15, (100,100,255), vindu, 2.3) # Lager en PowerUp-ball for skuddene
                 ekstra_pellet_ball.append(PowerUp_ball)
                 #spiller.pellet_counter -= 10
-            hinder.dood = True 
+            
+            hinder_liste.remove(hinder)
 
         if hinder.avstand(spiller) < 15 and avstand_mellom_spiller_og_hinder_bool == False: # Når spiller og hinder kolliderer kjører koden under
             avstand_mellom_spiller_og_hinder_bool = True
@@ -488,18 +521,33 @@ while not game_over:
         
         if P_U.y >= VINDU_HOYDE: # Fjerner powerUp-ballen når den treffer bunden av skjermen
             ekstra_pellet_ball.remove(P_U)
-            print(f"PowerUp borte, {ekstra_pellet_ball}")
+            print(f"PowerUp borte")
+    
+    for sprengt in eksplosjoner: # For-løkke som skjekker alle eksplosjon-ballene som er i spillet 
+        #Flytter og tegner dem
+        sprengt.flytt()
+        sprengt.tegn()
+    
+        # Hvis den ballen som blir skjekket treffer noen av sidene av skjermen, så blir de fjerna
+        if sprengt.y >= VINDU_HOYDE or sprengt.y <= 0 or sprengt.x >= VINDU_BREDDE or sprengt.x <= 0:
+            eksplosjoner.remove(sprengt)
+
+        if sprengt.avstand(spiller) <= 0: # Hvis spillerern kommer i kontakt med eksplosjonen, så taper spilleren
+            avstand_mellom_spiller_og_hinder_bool = True
 
 
     
-    alle_dood = all(hinder.dood for hinder in hinder_liste) # All skjekker 
-    if alle_dood == True:
+    alle_dood = all(hinder.dood for hinder in hinder_liste) # All skjekker om alle hindere sin variabel hinder.dood er sann
+    if len(hinder_liste) == 0:
         hinder_liste = [] # Fjerner alle de dø 
+        eksplosjoner = [] # Fjerner alle eksplosjon-deler
+        spiller.pellets = [] # Fjerner alle pellets som er på skjermen
+
         print("ALLE ER DØ")
         level = level + 1 # Øker level med 1, siden spilleren drepte alle hinderene 
         if level % 10 == 0: # Skjekker om levelet er 10, 20, 30, osv. Det gjør den ved å dele på 10, hvis resten er på 0, så er det et helt tall delt på 10. Hvis dette er sant, er det en BOSS
             hinder_liste = [] # Tømmer alle hinderene
-            hinder_liste.append(Boss(100, 50, 65, (255, 200, 0), vindu, 0.23)) # Legger inn en BOSS i hinder listen, slik kan koden forsette som den er skrevet uten egen kode for BOSS-en
+            hinder_liste.append(Boss(100, 50, 75, (255, 200, 0), vindu, 4)) # Legger inn en BOSS i hinder listen, slik kan koden forsette som den er skrevet uten egen kode for BOSS-en
             
             # Tekst som sier at det er boss
             boss_font = pg.font.SysFont(None, 84) 
@@ -537,7 +585,7 @@ while not game_over:
 
     vindu.blit(antall_pellets, (spiller.x - 11, spiller.y - 12))
 
-    if spiller.pellet_max - spiller.pellet_counter == 0: # Skjekker om skuddene til spilleren er 0
+    if spiller.pellet_max - spiller.pellet_counter == 0 and len(spiller.pellets) == 0 and len(ekstra_pellet_ball) == 0: # Skjekker om skuddene til spilleren er 0, i tilleg til om det er 0 skudd på skjermen, og at det ikke er noen PowerUp-baller for ekstra skudd på skjermen
         tom_for_pellets = True # HVis det er sant, så er tom_for_pellets SANN
 
     if avstand_mellom_spiller_og_hinder_bool or tom_for_pellets: # Hvis avstand_mellom_spiller_og_hinder_bool eller tom_for_pellets er True, så betyr det at hinder og spiller kolliderte, eller at spiller er tom for skudd.
@@ -546,15 +594,16 @@ while not game_over:
             # Her må alle verdier bli restarta
             hinder_liste = [] # Nye hindere
             ekstra_pellet_ball = [] # Tømmer alle powerUps
+            eksplosjoner = [] # Fjerner alle eksplosjon-deler
 
             for i in range(0, hinder_mengde): # så mange hindere som skal være for level 1 
                 x = random.randint(50, VINDU_BREDDE - 50)
                 y = random.randint(50, 150)
                 farge = (255, 0, 0)
-                hinder = Hinder(x, y, 20, farge, vindu, 0.23, hinder_sprite)
+                hinder = Hinder(x, y, 20, farge, vindu, 4, hinder_sprite)
                 hinder_liste.append(hinder)
 
-            spiller = Spiller(250, 600, 20, (200, 0, 100), vindu, 0.146) # Spiller starter på nytt
+            spiller = Spiller(250, 600, 20, (200, 0, 100), vindu, 5) # Spiller starter på nytt
 
             avstand_mellom_spiller_og_hinder_bool = False # Kollisjon variabel resetta
             tom_for_pellets = False # Tom for skudd variabel resetta
