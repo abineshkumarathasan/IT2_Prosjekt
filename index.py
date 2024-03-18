@@ -86,7 +86,7 @@ class Boss(Ball): # Egen klasse for BOSS i spillet
         super().__init__(x, y, radius, farge, vindusobjekt, fart)
         self.hp = 200 * ((level/10)/2) # Mer hp enn de vanlige hinderene (øker for hvert level)
         self.move_counter = 0
-        self.move_threshold = 400 # Ved å gjøre dette tallet større øker man mellomrommet for Hinder til å velge ny retning
+        self.move_threshold = 50 # Ved å gjøre dette tallet større øker man mellomrommet for Hinder til å velge ny retning
         self.sakteFart = 0.23
         if random.randint(0,100) <= 50: # Hvis det tilfeldige tallet er mindre enn tallet så... (50% sjanse)
             self.ekstraSkudd = True # Ekstra skudd blir gitt til spilleren
@@ -253,6 +253,14 @@ class PowerUp(Ball): # En klasse for PowerUp ballen som kommer
 class Stjerne(Ball): # Skal kun bli brukt for bakgrunn
     def __init__(self, x, y, radius, farge, vindusobjekt, fart):
         super().__init__(x, y, radius, farge, vindusobjekt, fart)
+
+    def flytt(self):
+        self.y += self.fart # Går sakte ned
+
+        # Hvis stjernen går ned til bunden av skjermen, så skal den komme tilbake opp på et tilfeldig sted
+        if self.y > VINDU_HOYDE: 
+            self.y = random.randint(-100, 0)
+            self.x = random.randint(0, VINDU_BREDDE)
 
 class Spreng(Ball): # Klasse som skal generere en ball som dukker opp når hinder blir drept
     def __init__(self, x, y, radius, farge, vinduobjekt, fart):
@@ -448,6 +456,12 @@ tom_for_pellets = False
 ekstra_pellet_ball = [] # Liste over PowerUp-baller som er på skjermen/spillet
 eksplosjoner = [] # Liste over eksplosjoner som er på skjermen/spillet
 
+stjerner = [] # Liste over stjerner i spillet
+# Lager 100 stjeren som skal være en del av bakgrunnenen til spillet. Mye av parameterne er tilfeldige
+for i in range(100):
+    # Legger stjerne klassen inn i stjerne listen. Tilfeldig x og y, tilfeldig radius mellom 5 og 10, Gul farge, og tilfeldig hastighet.
+    stjerner.append(Stjerne(random.randint(0, VINDU_BREDDE), random.randint(0, VINDU_HOYDE),random.randint(5,10),(150,150, 0),vindu, random.randint(1,2))) 
+
 # Dette er hovedløkken til spillet
 while not game_over:
 
@@ -461,11 +475,15 @@ while not game_over:
     # Henter en ordbok med status for alle tastatur-taster
     trykkede_taster = pg.key.get_pressed()
 
-    # Farger bakgrunnen lyseblå
-    vindu.fill((135, 206, 235))
+    # Farger bakgrunnen svart
+    vindu.fill((0, 0, 0))
+
+    for stjerne in stjerner: # Beveger og tegner alle stjernene
+        stjerne.flytt()
+        stjerne.tegn()
 
     # Tekst som skal vise hvilket level brukeren er på
-    level_text = font.render(f"Level: {level}", True, (0, 0, 0))
+    level_text = font.render(f"Level: {level}", True, (0, 255, 100))
     vindu.blit(level_text, (10, 10))  
 
     spiller.tegn()
