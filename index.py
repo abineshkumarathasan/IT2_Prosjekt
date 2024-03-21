@@ -30,6 +30,20 @@ class Ball:
 
     def tegn(self):
         pg.draw.circle(self.vinduobjekt, self.farge, (self.x, self.y), self.radius)
+    
+    def avstand(self, annenBall):
+        """Metode for å finne avstanden til en annen ball"""
+        xAvstand2 = (self.x - annenBall.x) ** 2 # x-avstand i andre
+        yAvstand2 = (self.y - annenBall.y) ** 2 # y-avstand i andre
+
+        sentrumsavstand = m.sqrt(xAvstand2 + yAvstand2)
+
+        radiuser = self.radius + annenBall.radius
+
+        avstand = sentrumsavstand - radiuser
+
+        return avstand
+
 
 class Hinder(Ball):
     def __init__(self, x, y, radius, farge, vindusobjekt, fart, sprite):
@@ -64,19 +78,6 @@ class Hinder(Ball):
             else:
                 self.fart = -abs(self.fart)
   
-
-    def avstand(self, annenBall):
-        xAvstand2 = (self.x - annenBall.x) ** 2 # x-avstand i andre
-        yAvstand2 = (self.y - annenBall.y) ** 2 # y-avstand i andre
-
-        sentrumsavstand = m.sqrt(xAvstand2 + yAvstand2)
-
-        radiuser = self.radius + annenBall.radius
-
-        avstand = sentrumsavstand - radiuser
-
-        return avstand
-
     def tegn(self): # For å tegne bilde isteden for ball
         self.vinduobjekt.blit(self.sprite, (self.x - self.radius, self.y - self.radius))
 
@@ -117,26 +118,12 @@ class Boss(Ball): # Egen klasse for BOSS i spillet
         self.farge = (0, 255, 46) # Gjør hinderet grønn
         if self.hp < 0:
             self.hp = 0
-
-    def avstand(self, annenBall):
-        xAvstand2 = (self.x - annenBall.x) ** 2 # x-avstand i andre
-        yAvstand2 = (self.y - annenBall.y) ** 2 # y-avstand i andre
-
-        sentrumsavstand = m.sqrt(xAvstand2 + yAvstand2)
-
-        radiuser = self.radius + annenBall.radius
-
-        avstand = sentrumsavstand - radiuser
-
-        return avstand
     
     def tegn(self):
         self.vinduobjekt.blit(boss_sprite, (self.x-self.radius-10, self.y - self.radius)) #trengte -10 for at det skulle være mer eksakt
         boss_hp = font.render(f"{str(self.hp)}", True, (255,255,255))
 
         vindu.blit(boss_hp, (hinder.x - 15, hinder.y + 50))
-
-
 
 
 
@@ -217,18 +204,6 @@ class Pellet(Ball):
     def draw(self):
         pg.draw.circle(self.vinduobjekt, self.farge, (self.x, self.y), self.radius)
 
-    def avstand(self, annenBall):
-        """Metode for å finne avstanden til en annen ball"""
-        xAvstand2 = (self.x - annenBall.x) ** 2 # x-avstand i andre
-        yAvstand2 = (self.y - annenBall.y) ** 2 # y-avstand i andre
-
-        sentrumsavstand = m.sqrt(xAvstand2 + yAvstand2)
-
-        radiuser = self.radius + annenBall.radius
-
-        avstand = sentrumsavstand - radiuser
-
-        return avstand
     
 class PowerUp(Ball): # En klasse for PowerUp ballen som kommer
     def __init__(self, x, y, radius, farge, vinduobjekt, fart):
@@ -237,18 +212,6 @@ class PowerUp(Ball): # En klasse for PowerUp ballen som kommer
     def flytt(self):
         self.y += self.fart # Går nedover
 
-    def avstand(self, annenBall):
-        """Metode for å finne avstanden til en annen ball"""
-        xAvstand2 = (self.x - annenBall.x) ** 2 # x-avstand i andre
-        yAvstand2 = (self.y - annenBall.y) ** 2 # y-avstand i andre
-
-        sentrumsavstand = m.sqrt(xAvstand2 + yAvstand2)
-
-        radiuser = self.radius + annenBall.radius
-
-        avstand = sentrumsavstand - radiuser
-
-        return avstand
 
 class Stjerne(Ball): # Skal kun bli brukt for bakgrunn
     def __init__(self, x, y, radius, farge, vindusobjekt, fart):
@@ -278,20 +241,6 @@ class Spreng(Ball): # Klasse som skal generere en ball som dukker opp når hinde
             self.yRetning = 1
         self.x += self.xFart * self.xRetning # Retning ganger farten er hvordan eksplosjonen skal bevege seg
         self.y += self.yFart * self.yRetning
-        
-    def avstand(self, annenBall):
-        """Metode for å finne avstanden til en annen ball"""
-        xAvstand2 = (self.x - annenBall.x) ** 2 # x-avstand i andre
-        yAvstand2 = (self.y - annenBall.y) ** 2 # y-avstand i andre
-
-        sentrumsavstand = m.sqrt(xAvstand2 + yAvstand2)
-
-        radiuser = self.radius + annenBall.radius
-
-        avstand = sentrumsavstand - radiuser
-
-        return avstand
-
 
 
 def title_screen():
@@ -329,6 +278,8 @@ def title_screen():
     play_tekst = play_font.render("Play", True, (255, 255, 255))
     play_tekst_posisjon = play_tekst.get_rect(center=(VINDU_BREDDE // 2, VINDU_HOYDE // 2 + 50))
 
+    gameStart_sfx.play()
+
     color_timer = 0 # Variabel som blir brukt for knappen sin farge
     lys_farge = True # Brukes også som variabel for knappen sin farge
     boks_farge = (0, 123, 0) # Knappen sin farge
@@ -362,8 +313,9 @@ def title_screen():
         pg.display.flip()
 
 # Funksjon som er game over skjermen
-def game_over_screen():
+def game_over_screen(grunn):
     game_over_font = pg.font.SysFont(None, 64)
+    grunn_font = pg.font.SysFont(None, 30)
     restart_button = pg.Rect(VINDU_BREDDE / 2 - 100, VINDU_HOYDE / 2, 200, 50) # Dette er posisjonen og størrelse på knappene
     quit_button = pg.Rect(VINDU_BREDDE / 2 - 100, VINDU_HOYDE / 2 + 100, 200, 50)
 
@@ -388,6 +340,11 @@ def game_over_screen():
         game_over_text_rect = game_over_text.get_rect(center=(VINDU_BREDDE / 2, 200))
         vindu.blit(game_over_text, game_over_text_rect)
 
+        # Tegner grunnen
+        grunn_text = grunn_font.render(grunn, True, (255, 255, 255))
+        grunn_text_rect = grunn_text.get_rect(center=(VINDU_BREDDE / 2, 250))
+        vindu.blit(grunn_text, grunn_text_rect)
+
         # Tegner restart knappen
         pg.draw.rect(vindu, (0, 150, 0), restart_button)
         restart_text = game_over_font.render("Restart", True, (255, 255, 255))
@@ -403,10 +360,6 @@ def game_over_screen():
         pg.display.flip()
 
 
-
-# Start tittel skjerm
-title_screen()
-
 # Laster ned alle sprites
 spiller_sprite_original = pg.image.load("Assets/SpillerSkip.png")
 spiller_sprite = pg.transform.scale(spiller_sprite_original, (60,60))
@@ -417,6 +370,14 @@ hinderDMG_sprite = pg.transform.scale(hinderDMG_sprite_original, (60,60))
 boss_sprite_original = pg.image.load("Assets/UbbiBoss.png")
 boss_sprite = pg.transform.scale(boss_sprite_original, (250,250))
 
+# Laster ned alle lydfilene
+explosion_sfx = pg.mixer.Sound("Assets/Sound/Eksplosjon.mp3")
+powerUp_sfx = pg.mixer.Sound("Assets/Sound/PowerUp.mp3")
+gameOver_sfx = pg.mixer.Sound("Assets/Sound/GameOver.mp3")
+gameStart_sfx = pg.mixer.Sound("Assets/Sound/GameStart.mp3")
+
+# Start tittel skjerm
+title_screen()
 
 hinder_mengde = 3 # Denne variabelen blir brukt senere slik at når en ny level starter
 
@@ -497,12 +458,9 @@ while not game_over:
                     spiller.pellets.remove(pellet)
                     hinder.hp -= 5
                     hinder.sprite = hinderDMG_sprite # Skal endre bilde til hinder
-                    print(hinder.sprite)
-                    print(hinder.hp)
                 else:
                     spiller.pellets.remove(pellet)
                     hinder.hp -= 10
-                    print(hinder.hp)
 
     for hinder in hinder_liste: # Gjør alle kode delene som må kjøres for alle hinderene
         hinder.tegn() # tegner hinderet
@@ -512,6 +470,7 @@ while not game_over:
             for i in range(0, random.randint(1,3)):
                 spreng = Spreng(hinder.x, hinder.y, random.randint(9,20), (255, 100, 0), vindu, 3)
                 eksplosjoner.append(spreng)
+                explosion_sfx.play()
 
             if hinder.ekstraSkudd == True: # Inne i alle hindere så er den en variabel som sier om den har ekstra skudd eller ikke
                 print("EKSTRA SKUDD")
@@ -523,9 +482,13 @@ while not game_over:
 
         if hinder.avstand(spiller) < 15 and avstand_mellom_spiller_og_hinder_bool == False: # Når spiller og hinder kolliderer kjører koden under
             avstand_mellom_spiller_og_hinder_bool = True
+            dood_grunn = "Du kolliderte med fienden"
+            print("Spiller og hinder kolliderte")
 
         if hinder.y >= VINDU_HOYDE: # Hvis hinderet treffer enden av bakken så taper spilleren
             avstand_mellom_spiller_og_hinder_bool = True
+            dood_grunn = "Fienden kom til enden"
+            print("Hinder traff enden av banen")
     
 
     for P_U in ekstra_pellet_ball: # Går igjennom alle powerUps i spillet akkurat da
@@ -536,6 +499,7 @@ while not game_over:
         if P_U.avstand(spiller) < 15: # Når spiller og powerUp-ball kolliderer kjører koden under
             spiller.pellet_counter -= 10
             ekstra_pellet_ball.remove(P_U)
+            powerUp_sfx.play()
         
         if P_U.y >= VINDU_HOYDE: # Fjerner powerUp-ballen når den treffer bunden av skjermen
             ekstra_pellet_ball.remove(P_U)
@@ -552,6 +516,8 @@ while not game_over:
 
         if sprengt.avstand(spiller) <= 0: # Hvis spillerern kommer i kontakt med eksplosjonen, så taper spilleren
             avstand_mellom_spiller_og_hinder_bool = True
+            dood_grunn = "Truffet av eksplosjon"
+            print("truffet av sprenging")
 
 
     
@@ -605,9 +571,13 @@ while not game_over:
 
     if spiller.pellet_max - spiller.pellet_counter == 0 and len(spiller.pellets) == 0 and len(ekstra_pellet_ball) == 0: # Skjekker om skuddene til spilleren er 0, i tilleg til om det er 0 skudd på skjermen, og at det ikke er noen PowerUp-baller for ekstra skudd på skjermen
         tom_for_pellets = True # HVis det er sant, så er tom_for_pellets SANN
+        dood_grunn = "Tom for pellets"
+        print("Spiller er tom for pellets")
 
     if avstand_mellom_spiller_og_hinder_bool or tom_for_pellets: # Hvis avstand_mellom_spiller_og_hinder_bool eller tom_for_pellets er True, så betyr det at hinder og spiller kolliderte, eller at spiller er tom for skudd.
-        valg = game_over_screen() # Game over skjermen kommer og spilleren får valget om å restarte eller avslutte
+        time.sleep(0.8)
+        gameOver_sfx.play()
+        valg = game_over_screen(dood_grunn) # Game over skjermen kommer og spilleren får valget om å restarte eller avslutte
         if valg == "restart":
             # Her må alle verdier bli restarta
             hinder_liste = [] # Nye hindere
